@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useState, useEffect} from 'react';
 import './App.css';
 import { makeStyles } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
@@ -11,8 +11,9 @@ import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField'
 import ButtonGroup from '@material-ui/core/ButtonGroup';
 import Button from '@material-ui/core/Button';
+import axios from 'axios';
 
-
+const baseURL = "http://localhost:9000";
 const useStyles = makeStyles({
   table: {
     minWidth: 650,
@@ -20,24 +21,35 @@ const useStyles = makeStyles({
 });
 
 function App() {
+  
   const classes = useStyles();
-  const [tempID, setTempID] = useState(0);
   const [allData,setAllData] = useState([]);
   const [data,setData] = useState({pname:'',description:'',size:''})
-  const deleteData = (e) => {
-    e.preventDefault();
+
+  
+  useEffect(() => { 
+    getData();
+  }, []);
+  async function getData(){
+    const {data} = await axios.get(`${baseURL}/properties`);
+    if(data.length)
+      setAllData(data);
     console.log(allData);
-    setAllData(allData.filter((data) => +data.id !== +e.target.id));
   }
-  const sendData = (e) => {
+
+  const deleteData = async (e) => {
     e.preventDefault();
-    setTempID(prevcount => prevcount + 1);
-    data['id'] = tempID;
-    console.log(data);
-    setAllData([...allData,data]);
-    setData({pname:'',description:'',size:''});
-    console.log(tempID);
     console.log(allData);
+    const confirm = await axios.delete(`${baseURL}/properties/${e.target.id}`);
+    if(confirm.status === 200)
+      setAllData(allData.filter((data) => data._id !== e.target.id));
+  }
+  const sendData = async (e) => {
+    e.preventDefault();
+    const newData = await axios.post(`${baseURL}/properties`,data);
+    if(newData)
+      setAllData((allData) => [...allData,newData.data]);
+    setData({pname:'',description:'',size:''});
   }
   return (
     <div className="App">
@@ -64,13 +76,13 @@ function App() {
             </TableHead>
             <TableBody>
               {allData.map((data) => (
-                  <TableRow id="tblrow" key = {data.id}>
+                  <TableRow id="tblrow" key = {data._id}>
                     <TableCell align="center">{data.pname}</TableCell>
                     <TableCell align="center">{data.description}</TableCell>
                     <TableCell align="center">{data.size}</TableCell>
                     <TableCell align="center">
                       <ButtonGroup variant="text" color="primary" aria-label="text primary button group"> 
-                        <Button id={data.id} className="submitbtn"  onClick={deleteData}>Delete</Button> 
+                        <Button id={data._id} className="submitbtn"  onClick={deleteData}>Delete</Button> 
                       </ButtonGroup>
                     </TableCell>
                 </TableRow>
